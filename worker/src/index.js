@@ -5,5 +5,5 @@ import { createTokenVerifier } from './verifyToken.js';
 export default createHandler({
   isAuthorized: createTokenVerifier(),
   proxyToTMDB,
-  allowedOrigin: 'https://tonpseudo.github.io',
+  allowedOrigin: 'https://nicosomot.github.io',
 });
