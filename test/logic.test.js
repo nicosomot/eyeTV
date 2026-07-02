@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { progressPct, nextEpisode, extractEpisodesPerSeason } from '../src/logic.js';
+import { progressPct, nextEpisode, extractEpisodesPerSeason, avatarInitial } from '../src/logic.js';
 
 describe('progressPct', () => {
   it('retourne 0 si total est 0', () => {
@@ -42,5 +42,24 @@ describe('nextEpisode', () => {
 
   it('retourne null si la saison courante est inconnue de episodesPerSeason', () => {
     expect(nextEpisode({ season: 5, episode: 1 }, [8, 10])).toBeNull();
+  });
+});
+
+describe('avatarInitial', () => {
+  it('utilise la première lettre du displayName si présent', () => {
+    expect(avatarInitial('Nicolas Morin', 'nico@example.com')).toBe('N');
+  });
+
+  it("utilise la première lettre de l'email si displayName absent", () => {
+    expect(avatarInitial(null, 'nico@example.com')).toBe('N');
+  });
+
+  it('retourne "?" si ni displayName ni email ne sont disponibles', () => {
+    expect(avatarInitial(null, null)).toBe('?');
+    expect(avatarInitial(undefined, undefined)).toBe('?');
+  });
+
+  it('met la lettre en majuscule', () => {
+    expect(avatarInitial('nicolas', null)).toBe('N');
   });
 });
