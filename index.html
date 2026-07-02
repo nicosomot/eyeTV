@@ -395,6 +395,44 @@
       transform: translateX(-50%) translateY(0);
     }
 
+    /* — Discover — */
+    .discover-row { margin-bottom: 20px; }
+    .discover-row-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+      padding: 0 2px;
+    }
+    .discover-row-scroll {
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      scroll-snap-type: x proximity;
+    }
+    .discover-card {
+      flex: 0 0 auto;
+      width: 100px;
+      cursor: pointer;
+      scroll-snap-align: start;
+    }
+    .discover-card-poster {
+      width: 100px;
+      height: 150px;
+      border-radius: 8px;
+      object-fit: cover;
+      background: var(--surface2);
+    }
+    .discover-card-title {
+      font-size: 0.75rem;
+      margin-top: 4px;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    #discover-sentinel { height: 1px; }
+
     /* — Loading — */
     .loading { text-align: center; padding: 32px; color: var(--text-muted); }
   </style>
@@ -435,6 +473,15 @@
   </div>
   <div id="search-results" class="search-results" style="display:none"></div>
   <div id="watchlist-list"></div>
+</div>
+
+<div id="screen-discover" class="screen">
+  <div id="discover-rows"></div>
+</div>
+
+<div id="screen-discover-detail" class="screen">
+  <button class="btn-ghost" id="btn-discover-detail-back" style="margin-bottom:12px">← Retour</button>
+  <div id="discover-detail-content"></div>
 </div>
 
 <div id="screen-settings" class="screen">
@@ -481,6 +528,13 @@
       <line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
     </svg>
     Watchlist
+  </button>
+  <button class="nav-tab" data-tab="discover">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+      <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+    </svg>
+    Discover
   </button>
 </nav>
 
