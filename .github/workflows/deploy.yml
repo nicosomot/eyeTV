@@ -12,9 +12,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Generate config.js
+      - name: Build dist/ (fichiers publics uniquement)
         run: |
-          cat > config.js << EOF
+          mkdir -p dist/src
+          cp index.html dist/
+          cp src/*.js dist/src/
+
+          cat > dist/config.js << EOF
           const CONFIG = {
             TMDB_WORKER_BASE: "https://tv-tracker-tmdb-proxy.ncmorin.workers.dev",
             FIREBASE: ${FIREBASE_CONFIG}
@@ -27,4 +31,4 @@ jobs:
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./
+          publish_dir: ./dist
