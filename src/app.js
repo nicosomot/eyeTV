@@ -1,4 +1,5 @@
 import { progressPct, nextEpisode, extractEpisodesPerSeason, avatarInitial } from './logic.js';
+import { FIXED_ROWS, buildGenreRows, buildRandomRowPath } from './discover.js';
 import { tmdbFetch as tmdbFetchRaw, validateTmdbKey } from './tmdb.js';
 import { userRef, seriesRef, countWatched, markEpisodeWatched, unmarkEpisodeWatched, getTmdbApiKey, saveTmdbApiKey } from './firestore.js';
 
@@ -17,6 +18,8 @@ const screens = {
   watchlist: document.getElementById('screen-watchlist'),
   detail: document.getElementById('screen-detail'),
   settings: document.getElementById('screen-settings'),
+  discover: document.getElementById('screen-discover'),
+  'discover-detail': document.getElementById('screen-discover-detail'),
 };
 auth.onAuthStateChanged(async (user) => {
   if (user) {
@@ -114,12 +117,21 @@ document.getElementById('btn-settings-save').addEventListener('click', async () 
 });
 
 document.querySelectorAll('.nav-tab').forEach((tab) => {
-  tab.addEventListener('click', () => showScreen(tab.dataset.tab));
+  tab.addEventListener('click', () => {
+    showScreen(tab.dataset.tab);
+    if (tab.dataset.tab === 'discover') {
+      loadDiscoverScreen();
+    }
+  });
 });
 
 document.getElementById('btn-back').addEventListener('click', () => {
   const activeTab = document.querySelector('.nav-tab.active').dataset.tab;
   showScreen(activeTab);
+});
+
+document.getElementById('btn-discover-detail-back').addEventListener('click', () => {
+  showScreen('discover');
 });
 
 function showScreen(name) {
@@ -140,7 +152,7 @@ function showScreen(name) {
 
   avatarWrap.style.display = 'block';
 
-  if (name === 'detail' || name === 'settings') {
+  if (name === 'detail' || name === 'settings' || name === 'discover-detail') {
     bottomNav.style.display = 'none';
     screens[name].style.display = 'block';
     screens[name].classList.add('active');
@@ -503,4 +515,97 @@ async function openDetail(tmdbId, seriesData) {
   }
 
   showScreen('detail');
+}
+
+let discoverObserver = null;
+let discoverDetailShow = null;
+
+async function loadDiscoverScreen() {
+  const container = document.getElementById('discover-rows');
+  container.innerHTML = '<div class="loading">Chargement…</div>';
+  if (discoverObserver) {
+    discoverObserver.disconnect();
+    discoverObserver = null;
+  }
+
+  const genresData = await tmdbFetch('/genre/tv/list');
+  const genres = genresData.genres || [];
+
+  container.innerHTML = '';
+
+  for (const row of FIXED_ROWS) {
+    await renderDiscoverRow(container, row.title, row.path);
+  }
+  for (const row of buildGenreRows(genres)) {
+    await renderDiscoverRow(container, row.title, row.path);
+  }
+  await renderDiscoverRow(container, 'Surprends-moi', buildRandomRowPath());
+
+  observeDiscoverSentinel(container);
+}
+
+async function renderDiscoverRow(container, title, path) {
+  const data = await tmdbFetch(path);
+  const shows = data.results || [];
+  if (!shows.length) return;
+
+  const block = document.createElement('div');
+  block.className = 'discover-row';
+  block.innerHTML = `<h3 class="discover-row-title">${title}</h3><div class="discover-row-scroll"></div>`;
+  const scroll = block.querySelector('.discover-row-scroll');
+
+  shows.forEach((show) => {
+    const card = document.createElement('div');
+    card.className = 'discover-card';
+    card.innerHTML = `
+      <img class="discover-card-poster" src="${show.poster_path ? 'https://image.tmdb.org/t/p/w185' + show.poster_path : ''}" alt="${show.name}" loading="lazy">
+      <div class="discover-card-title">${show.name}</div>`;
+    card.addEventListener('click', () => openDiscoverDetail(show.id));
+    scroll.appendChild(card);
+  });
+
+  container.appendChild(block);
+}
+
+function observeDiscoverSentinel(container) {
+  const sentinel = document.createElement('div');
+  sentinel.id = 'discover-sentinel';
+  container.appendChild(sentinel);
+
+  discoverObserver = new IntersectionObserver(async (entries) => {
+    if (entries[0].isIntersecting) {
+      sentinel.remove();
+      await renderDiscoverRow(container, 'Surprends-moi', buildRandomRowPath());
+      observeDiscoverSentinel(container);
+    }
+  });
+  discoverObserver.observe(sentinel);
+}
+
+async function openDiscoverDetail(tmdbId) {
+  const container = document.getElementById('discover-detail-content');
+  container.innerHTML = '<div class="loading">Chargement…</div>';
+  showScreen('discover-detail');
+
+  const details = await tmdbFetch(`/tv/${tmdbId}`);
+  discoverDetailShow = {
+    id: details.id,
+    name: details.name,
+    poster_path: details.poster_path,
+  };
+
+  const genreNames = (details.genres || []).map((g) => g.name).join(', ');
+  const rating = details.vote_average ? details.vote_average.toFixed(1) : '—';
+
+  container.innerHTML = `
+    <img class="detail-poster" src="${details.poster_path ? 'https://image.tmdb.org/t/p/w342' + details.poster_path : ''}" alt="${details.name}" style="margin-bottom:12px">
+    <h2 style="margin-bottom:8px">${details.name}</h2>
+    <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:12px">${genreNames} · ${details.number_of_seasons} saison(s) · ★ ${rating}/10</p>
+    <p style="font-size:0.9rem;margin-bottom:16px">${details.overview || 'Pas de synopsis disponible.'}</p>
+    <button class="btn-primary" id="btn-discover-add">+ Ajouter à la watchlist</button>
+  `;
+
+  document.getElementById('btn-discover-add').addEventListener('click', async () => {
+    await addSeries(discoverDetailShow);
+  });
 }
