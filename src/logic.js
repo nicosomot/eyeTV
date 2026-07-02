@@ -28,3 +28,8 @@ export function nextEpisode(lastWatched, episodesPerSeason) {
   }
   return { season, episode: episode + 1 };
 }
+
+export function avatarInitial(displayName, email) {
+  const source = displayName || email || '';
+  return source.charAt(0).toUpperCase() || '?';
+}

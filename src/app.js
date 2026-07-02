@@ -1,4 +1,4 @@
-import { progressPct, nextEpisode, extractEpisodesPerSeason } from './logic.js';
+import { progressPct, nextEpisode, extractEpisodesPerSeason, avatarInitial } from './logic.js';
 import { tmdbFetch as tmdbFetchRaw } from './tmdb.js';
 import { userRef, seriesRef, countWatched, markEpisodeWatched, unmarkEpisodeWatched } from './firestore.js';
 
@@ -16,11 +16,10 @@ const screens = {
   watchlist: document.getElementById('screen-watchlist'),
   detail: document.getElementById('screen-detail'),
 };
-const screenTitles = { watching: 'En cours', watchlist: 'Watchlist' };
-
 auth.onAuthStateChanged((user) => {
   if (user) {
     currentUser = user;
+    renderUserBubble(user);
     showScreen('watching');
     loadWatchingScreen();
     loadWatchlistScreen();
@@ -35,7 +34,33 @@ document.getElementById('btn-google-signin').addEventListener('click', () => {
   auth.signInWithPopup(provider);
 });
 
-document.getElementById('btn-signout').addEventListener('click', () => {
+function renderUserBubble(user) {
+  const bubble = document.getElementById('avatar-bubble');
+  bubble.innerHTML = '';
+  if (user.photoURL) {
+    const img = document.createElement('img');
+    img.src = user.photoURL;
+    img.alt = user.displayName || '';
+    img.onerror = () => {
+      bubble.innerHTML = '';
+      bubble.textContent = avatarInitial(user.displayName, user.email);
+    };
+    bubble.appendChild(img);
+  } else {
+    bubble.textContent = avatarInitial(user.displayName, user.email);
+  }
+}
+
+document.getElementById('avatar-bubble').addEventListener('click', (e) => {
+  e.stopPropagation();
+  document.getElementById('avatar-menu').classList.toggle('open');
+});
+
+document.addEventListener('click', () => {
+  document.getElementById('avatar-menu').classList.remove('open');
+});
+
+document.getElementById('menu-signout').addEventListener('click', () => {
   auth.signOut();
 });
 
@@ -54,27 +79,28 @@ function showScreen(name) {
     s.classList.remove('active');
   });
   const bottomNav = document.getElementById('bottom-nav');
+  const avatarWrap = document.getElementById('avatar-wrap');
 
   if (name === 'login') {
     bottomNav.style.display = 'none';
+    avatarWrap.style.display = 'none';
     screens.login.style.display = 'block';
     screens.login.classList.add('active');
-    document.getElementById('screen-title').textContent = 'Connexion';
     return;
   }
+
+  avatarWrap.style.display = 'block';
 
   if (name === 'detail') {
     bottomNav.style.display = 'none';
     screens.detail.style.display = 'block';
     screens.detail.classList.add('active');
-    document.getElementById('screen-title').textContent = '';
     return;
   }
 
   bottomNav.style.display = 'flex';
   screens[name].style.display = 'block';
   screens[name].classList.add('active');
-  document.getElementById('screen-title').textContent = screenTitles[name];
   document.querySelectorAll('.nav-tab').forEach((t) => {
     t.classList.toggle('active', t.dataset.tab === name);
   });
