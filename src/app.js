@@ -1,12 +1,13 @@
 import { progressPct, nextEpisode, extractEpisodesPerSeason, avatarInitial } from './logic.js';
-import { tmdbFetch as tmdbFetchRaw } from './tmdb.js';
-import { userRef, seriesRef, countWatched, markEpisodeWatched, unmarkEpisodeWatched } from './firestore.js';
+import { tmdbFetch as tmdbFetchRaw, validateTmdbKey } from './tmdb.js';
+import { userRef, seriesRef, countWatched, markEpisodeWatched, unmarkEpisodeWatched, getTmdbApiKey, saveTmdbApiKey } from './firestore.js';
 
 firebase.initializeApp(CONFIG.FIREBASE);
 const db = firebase.firestore();
 const auth = firebase.auth();
 
-const tmdbFetch = (path) => tmdbFetchRaw(path, auth, CONFIG.TMDB_WORKER_BASE);
+let tmdbApiKey = null;
+const tmdbFetch = (path) => tmdbFetchRaw(path, tmdbApiKey);
 
 let currentUser = null;
 
@@ -15,16 +16,23 @@ const screens = {
   watching: document.getElementById('screen-watching'),
   watchlist: document.getElementById('screen-watchlist'),
   detail: document.getElementById('screen-detail'),
+  settings: document.getElementById('screen-settings'),
 };
-auth.onAuthStateChanged((user) => {
+auth.onAuthStateChanged(async (user) => {
   if (user) {
     currentUser = user;
     renderUserBubble(user);
+    tmdbApiKey = await getTmdbApiKey(db, user.uid);
+    if (!tmdbApiKey) {
+      openSettings();
+      return;
+    }
     showScreen('watching');
     loadWatchingScreen();
     loadWatchlistScreen();
   } else {
     currentUser = null;
+    tmdbApiKey = null;
     showScreen('login');
   }
 });
@@ -64,6 +72,47 @@ document.getElementById('menu-signout').addEventListener('click', () => {
   auth.signOut();
 });
 
+document.getElementById('menu-settings').addEventListener('click', () => {
+  openSettings();
+});
+
+function openSettings() {
+  document.getElementById('settings-tmdb-key').value = tmdbApiKey || '';
+  document.getElementById('settings-error').textContent = '';
+  document.getElementById('btn-settings-back').style.display = tmdbApiKey ? 'inline-block' : 'none';
+  showScreen('settings');
+}
+
+document.getElementById('btn-settings-back').addEventListener('click', () => {
+  const activeTab = document.querySelector('.nav-tab.active').dataset.tab;
+  showScreen(activeTab);
+});
+
+document.getElementById('btn-settings-save').addEventListener('click', async () => {
+  const input = document.getElementById('settings-tmdb-key');
+  const errorEl = document.getElementById('settings-error');
+  const key = input.value.trim();
+  errorEl.textContent = '';
+
+  if (!key) {
+    errorEl.textContent = 'Renseigne une clé.';
+    return;
+  }
+
+  const valid = await validateTmdbKey(key);
+  if (!valid) {
+    errorEl.textContent = 'Clé invalide — vérifie que tu as copié la bonne clé API v3.';
+    return;
+  }
+
+  await saveTmdbApiKey(db, currentUser.uid, key);
+  tmdbApiKey = key;
+  showToast('Clé TMDB enregistrée');
+  showScreen('watching');
+  loadWatchingScreen();
+  loadWatchlistScreen();
+});
+
 document.querySelectorAll('.nav-tab').forEach((tab) => {
   tab.addEventListener('click', () => showScreen(tab.dataset.tab));
 });
@@ -91,10 +140,10 @@ function showScreen(name) {
 
   avatarWrap.style.display = 'block';
 
-  if (name === 'detail') {
+  if (name === 'detail' || name === 'settings') {
     bottomNav.style.display = 'none';
-    screens.detail.style.display = 'block';
-    screens.detail.classList.add('active');
+    screens[name].style.display = 'block';
+    screens[name].classList.add('active');
     return;
   }
 

@@ -20,7 +20,6 @@ jobs:
 
           cat > dist/config.js << EOF
           const CONFIG = {
-            TMDB_WORKER_BASE: "https://tv-tracker-tmdb-proxy.ncmorin.workers.dev",
             FIREBASE: ${FIREBASE_CONFIG}
           };
           EOF
