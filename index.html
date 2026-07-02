@@ -412,6 +412,7 @@
   <div class="avatar-wrap" id="avatar-wrap" style="display:none">
     <div class="avatar-bubble" id="avatar-bubble"></div>
     <div class="avatar-menu" id="avatar-menu">
+      <div class="avatar-menu-item" id="menu-settings">Paramètres</div>
       <div class="avatar-menu-item" id="menu-signout">Déconnexion</div>
     </div>
   </div>
@@ -434,6 +435,20 @@
   </div>
   <div id="search-results" class="search-results" style="display:none"></div>
   <div id="watchlist-list"></div>
+</div>
+
+<div id="screen-settings" class="screen">
+  <div class="empty-state" style="text-align:left;padding:24px 4px">
+    <p style="margin-bottom:16px">
+      Renseigne ta propre clé API TMDB (gratuite) pour pouvoir rechercher et ajouter des séries.
+      Crée-en une en 2 minutes sur
+      <a href="https://www.themoviedb.org/settings/api" target="_blank" rel="noopener" style="color:var(--accent)">themoviedb.org</a>.
+    </p>
+    <input type="text" class="search-input" id="settings-tmdb-key" placeholder="Clé API TMDB (v3)" autocomplete="off" style="margin-bottom:8px">
+    <div id="settings-error" style="color:#e57373;font-size:0.8rem;min-height:1.2em;margin-bottom:12px"></div>
+    <button class="btn-primary" id="btn-settings-save">Enregistrer</button>
+    <button class="btn-ghost" id="btn-settings-back" style="margin-top:10px;display:none">← Retour</button>
+  </div>
 </div>
 
 <div id="screen-detail">

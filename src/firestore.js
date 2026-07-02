@@ -26,3 +26,13 @@ export async function markEpisodeWatched(db, firebaseFieldValue, uid, tmdbId, se
 export async function unmarkEpisodeWatched(db, uid, tmdbId, season, episode) {
   await watchedRef(db, uid, tmdbId, season, episode).delete();
 }
+
+export async function getTmdbApiKey(db, uid) {
+  const snap = await userRef(db, uid).get();
+  const data = snap.data();
+  return data && data.tmdb_api_key ? data.tmdb_api_key : null;
+}
+
+export async function saveTmdbApiKey(db, uid, apiKey) {
+  await userRef(db, uid).set({ tmdb_api_key: apiKey }, { merge: true });
+}
